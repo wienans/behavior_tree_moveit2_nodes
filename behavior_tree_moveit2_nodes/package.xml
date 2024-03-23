@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>behavior_tree_moveit2_nodes</name>
+  <version>0.0.0</version>
+  <description>BehaviorTree.CPP Nodes for Moveit2</description>
+  <maintainer email="sven.wienand@outlook.com">explainingrobotics</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  
+  <depend>moveit2</depend>
+  <depend>moveit_visual_tools</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  
+  <depend>behaviortree_cpp</depend>
+  <depend>behaviortree_ros2</depend>
+
+  <depend>std_msgs</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

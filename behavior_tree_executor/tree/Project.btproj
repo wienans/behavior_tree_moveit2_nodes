@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4" project_name="Project">
+    <include path="main.xml"/>
+    <include path="subtree.xml"/>
+    <!-- Description of Node Models (used by Groot) -->
+    <TreeNodesModel>
+        <Action ID="PlanToPose" editable="true">
+            <input_port name="pose_stamped"/>
+        </Action>
+        <Action ID="PrintPose" editable="true">
+            <input_port name="pose_stamped"/>
+        </Action>
+        <Action ID="ReceiveString" editable="true"/>
+        <Action ID="SetPose" editable="true">
+            <input_port name="x"/>
+            <input_port name="y"/>
+            <input_port name="z"/>
+            <input_port name="frame_id"/>
+            <output_port name="pose_stamped"/>
+        </Action>
+    </TreeNodesModel>
+</root>

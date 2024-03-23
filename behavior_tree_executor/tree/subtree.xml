@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4">
+  <BehaviorTree ID="testSubTree">
+    <Sequence>
+      <AlwaysSuccess name="A"/>
+      <AlwaysSuccess/>
+      <Sleep msec="1000"/>
+      <SetPose x="0"
+               y="1"
+               z="2"
+               frame_id="test"
+               pose_stamped="{pose}"/>
+      <PrintPose pose_stamped="{pose}"/>
+      <PlanToPose pose_stamped="{pose}"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="PlanToPose"
+            editable="true">
+      <input_port name="pose_stamped"/>
+    </Action>
+    <Action ID="PrintPose"
+            editable="true">
+      <input_port name="pose_stamped"/>
+    </Action>
+    <Action ID="SetPose"
+            editable="true">
+      <input_port name="x"/>
+      <input_port name="y"/>
+      <input_port name="z"/>
+      <input_port name="frame_id"/>
+      <output_port name="pose_stamped"/>
+    </Action>
+  </TreeNodesModel>
+
+</root>
