@@ -37,23 +37,23 @@ BehaviorTreeExecutor::BehaviorTreeExecutor(rclcpp::NodeOptions options)
   // file_logger_ = std::make_shared<BT::FileLogger2>(*main_tree_, "test.btlog");
   cout_logger_ = std::make_shared<BT::StdCoutLogger>(*main_tree_);
 
-  bt_tick_thread_ = std::make_shared<std::thread>(
-    [this]() {
-      while (rclcpp::ok()) {
-        // this->main_tree_->tickWhileRunning();
-        this->main_tree_->tickOnce();
-        this->main_tree_->sleep(std::chrono::milliseconds(10));
-      }
-      rclcpp::shutdown();
-    }
-  );
+  timer_bt_tick_ =
+    create_wall_timer(
+    std::chrono::milliseconds(10),
+    std::bind(&BehaviorTreeExecutor::behaviortreeTick, this));
 
 }
 
 BehaviorTreeExecutor::~BehaviorTreeExecutor()
 {
-  bt_tick_thread_->join();
+
 }
+
+void BehaviorTreeExecutor::behaviortreeTick()
+{
+  main_tree_->tickOnce();
+}
+
 void BehaviorTreeExecutor::registerParameters()
 {
   RCLCPP_INFO_STREAM(this->get_logger(), "Reading Parameters");

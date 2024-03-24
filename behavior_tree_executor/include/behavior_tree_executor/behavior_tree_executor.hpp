@@ -45,15 +45,20 @@ private:
    */
   void onParamEvent(rcl_interfaces::msg::ParameterEvent::UniquePtr event);
 
+  /**
+   * @brief Timer Callback to Tick behavior tree
+   */
+  void behaviortreeTick();
+
   std::shared_ptr<BT::BehaviorTreeFactory> factory_;
   std::shared_ptr<BT::Tree> main_tree_;
   std::shared_ptr<BT::Groot2Publisher> groot_logger_;
   std::shared_ptr<BT::FileLogger2> file_logger_;
   std::shared_ptr<BT::StdCoutLogger> cout_logger_;
   /**
-   * @brief Thread to tick the behavior tree
+   * @brief Thimer to syncronisly tick the behavior tree
    */
-  std::shared_ptr<std::thread> bt_tick_thread_;
+  rclcpp::TimerBase::SharedPtr timer_bt_tick_;
   /**
    * @brief The example parameter
    */
