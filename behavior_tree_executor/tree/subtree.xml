@@ -11,7 +11,15 @@
                frame_id="test"
                pose_stamped="{pose}"/>
       <PrintPose pose_stamped="{pose}"/>
-      <PlanToPose pose_stamped="{pose}"/>
+      <Parallel failure_count="1"
+                success_count="1">
+        <PlanToPose pose_stamped="{pose}"/>
+        <Sequence>
+          <Delay delay_msec="2000">
+            <AlwaysSuccess/>
+          </Delay>
+        </Sequence>
+      </Parallel>
     </Sequence>
   </BehaviorTree>
 
