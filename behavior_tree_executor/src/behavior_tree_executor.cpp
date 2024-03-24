@@ -12,13 +12,32 @@ BehaviorTreeExecutor::BehaviorTreeExecutor(rclcpp::NodeOptions options)
 
   // Register Interfaces
   registerParameters();
-  factory_ = std::make_shared<BT::BehaviorTreeFactory>();
+  // Reuse the bt tick timer to get out of the Constructor for initialization
+  // the this->shared_from_this() only works out of constructor and is needed for Node init
+  timer_bt_tick_ =
+    create_wall_timer(
+    std::chrono::milliseconds(1),
+    std::bind(&BehaviorTreeExecutor::init, this));
+}
 
+BehaviorTreeExecutor::~BehaviorTreeExecutor()
+{
+
+}
+void BehaviorTreeExecutor::init()
+{
+  // Cancle the timer directly (one time use)
+  timer_bt_tick_->cancel();
+  // Get the Shared Pointer from the node
+  auto node = this->shared_from_this();
+
+  // Create Factory
+  factory_ = std::make_shared<BT::BehaviorTreeFactory>();
 
   // Register Nodes
   factory_->registerNodeType<bt_moveit2_nodes::SetPose>("SetPose");
   factory_->registerNodeType<bt_moveit2_nodes::PrintPose>("PrintPose");
-  factory_->registerNodeType<bt_moveit2_nodes::PlanToPose>("PlanToPose");
+  factory_->registerNodeType<bt_moveit2_nodes::PlanToPose>("PlanToPose", node);
 
   // Register Behavior Trees
   for (auto const & entry : std::filesystem::directory_iterator(tree_folder_path_)) {
@@ -41,14 +60,7 @@ BehaviorTreeExecutor::BehaviorTreeExecutor(rclcpp::NodeOptions options)
     create_wall_timer(
     std::chrono::milliseconds(10),
     std::bind(&BehaviorTreeExecutor::behaviortreeTick, this));
-
 }
-
-BehaviorTreeExecutor::~BehaviorTreeExecutor()
-{
-
-}
-
 void BehaviorTreeExecutor::behaviortreeTick()
 {
   main_tree_->tickOnce();

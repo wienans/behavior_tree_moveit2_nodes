@@ -46,6 +46,12 @@ private:
   void onParamEvent(rcl_interfaces::msg::ParameterEvent::UniquePtr event);
 
   /**
+   * @brief
+   *
+   */
+  void init();
+
+  /**
    * @brief Timer Callback to Tick behavior tree
    */
   void behaviortreeTick();

@@ -1,27 +1,45 @@
 #include "behaviortree_cpp/action_node.h"
-#include "geometry_msgs/msg/pose_stamped.hpp"
+#include <rclcpp/rclcpp.hpp>
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 namespace bt_moveit2_nodes
 {
 using namespace BT;
 class PlanToPose : public StatefulActionNode
 {
 public:
-  PlanToPose(const std::string & name, const NodeConfig & config)
-  :StatefulActionNode(name, config)
+  PlanToPose(
+    const std::string & name, const NodeConfig & config,
+    const std::shared_ptr<rclcpp::Node> nh)
+  :StatefulActionNode(name, config), node_(nh)
   {
+    Expected<std::string> planing_group = getInput<std::string>("planing_group");
+    if (!planing_group) {
+      throw
+        BT::RuntimeError("missing required input [planing_group]: ", planing_group.error());
+    }
+    // Create the MoveIt MoveGroup Interface
+    using moveit::planning_interface::MoveGroupInterface;
+    move_group_interface_ = std::make_shared<MoveGroupInterface>(node_, planing_group.value());
   }
 
   static PortsList providedPorts()
   {
-    return {InputPort<geometry_msgs::msg::PoseStamped>("pose_stamped")};
+    return {InputPort<geometry_msgs::msg::PoseStamped>("pose_stamped"),
+      InputPort<std::string>("planing_group"),
+      OutputPort<moveit::planning_interface::MoveGroupInterface::Plan>("plan")};
   }
 
   NodeStatus onStart() override
   {
     isRunning_ = true;
+    planSuccess_ = false;
+
     std::cout << "start" << std::endl;
     plan_thread_ = std::make_shared<std::thread>(
-      std::bind(&PlanToPose::plan, this, std::ref(isRunning_))
+      std::bind(
+        &PlanToPose::plan, this, std::ref(isRunning_), std::ref(planSuccess_),
+        std::ref(finalPlan_))
     );
     return NodeStatus::RUNNING;
   }
@@ -31,7 +49,13 @@ public:
       return NodeStatus::RUNNING;
     }
     plan_thread_->join();
-    return NodeStatus::SUCCESS;
+    if (planSuccess_) {
+      std::cout << "Planing Time: " << finalPlan_.planning_time_ << std::endl;
+      setOutput("plan", finalPlan_);
+      return NodeStatus::SUCCESS;
+    } else {
+      return NodeStatus::FAILURE;
+    }
   }
 
   void onHalted() override
@@ -41,33 +65,34 @@ public:
   }
 
 private:
-  void plan(std::atomic<bool> & isRunning)
+  void plan(
+    std::atomic<bool> & isRunning, std::atomic<bool> & planSuccess,
+    moveit::planning_interface::MoveGroupInterface::Plan & finalPlan)
   {
-    std::cout << "start plan" << std::endl;
     if (auto any_ptr = getLockedPortContent("pose_stamped")) {
-      std::cout << "lock" << std::endl;
       if (!any_ptr->empty()) {
         auto * pose_ptr = any_ptr->castPtr<geometry_msgs::msg::PoseStamped>();
+        move_group_interface_->setPoseTarget(*pose_ptr);
 
-        std::cout << "Test" << pose_ptr->pose.position.x << " " << pose_ptr->pose.position.y <<
-          " " <<
-          pose_ptr->pose.position.z << std::endl;
-      } else {
-        std::cout << "empty" << std::endl;
+        std::cout << "Plan To Pose: " << pose_ptr->pose.position.x << " " <<
+          pose_ptr->pose.position.y << " " << pose_ptr->pose.position.z << std::endl;
+        auto const [success, plan] = [this] {
+          moveit::planning_interface::MoveGroupInterface::Plan msg;
+          auto const ok = static_cast<bool>(move_group_interface_->plan(msg));
+          return std::make_pair(ok, msg);
+        }();
+        planSuccess = success;
+        finalPlan = plan;
       }
-    } else {
-      std::cout << "not locked" << std::endl;
-    }
-    for (int i = 0; i < 5; i++) {
-      std::cout << i << std::endl;
-      std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     isRunning = false;
   }
-
-
+  std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface_;
+  std::shared_ptr<rclcpp::Node> node_;
   std::shared_ptr<std::thread> plan_thread_;
   std::atomic<bool> isRunning_;
+  std::atomic<bool> planSuccess_;
+  moveit::planning_interface::MoveGroupInterface::Plan finalPlan_;
 };
 
 } // namespace name

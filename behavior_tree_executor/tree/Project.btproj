@@ -6,6 +6,8 @@
     <TreeNodesModel>
         <Action ID="PlanToPose" editable="true">
             <input_port name="pose_stamped"/>
+            <input_port name="planing_group"/>
+            <output_port name="plan"/>
         </Action>
         <Action ID="PrintPose" editable="true">
             <input_port name="pose_stamped"/>

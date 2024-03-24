@@ -5,20 +5,20 @@
       <AlwaysSuccess name="A"/>
       <AlwaysSuccess/>
       <Sleep msec="1000"/>
-      <SetPose x="0"
-               y="1"
-               z="2"
+      <SetPose x="0.28"
+               y="0.4"
+               z="0.5"
                frame_id="test"
                pose_stamped="{pose}"/>
       <PrintPose pose_stamped="{pose}"/>
       <Parallel failure_count="1"
-                success_count="1">
-        <PlanToPose pose_stamped="{pose}"/>
-        <Sequence>
-          <Delay delay_msec="2000">
-            <AlwaysSuccess/>
-          </Delay>
-        </Sequence>
+                success_count="-1">
+        <PlanToPose pose_stamped="{pose}"
+                    planing_group="panda_arm"
+                    plan="{plan}"/>
+        <PlanToPose pose_stamped="{pose}"
+                    planing_group="panda_arm"
+                    plan="{plan}"/>
       </Parallel>
     </Sequence>
   </BehaviorTree>
@@ -28,6 +28,8 @@
     <Action ID="PlanToPose"
             editable="true">
       <input_port name="pose_stamped"/>
+      <input_port name="planing_group"/>
+      <output_port name="plan"/>
     </Action>
     <Action ID="PrintPose"
             editable="true">
