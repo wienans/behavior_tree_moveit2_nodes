@@ -5,10 +5,10 @@
 namespace bt_moveit2_nodes
 {
 using namespace BT;
-class PlanToPose : public StatefulActionNode
+class MoveToPose : public StatefulActionNode
 {
 public:
-  PlanToPose(
+  MoveToPose(
     const std::string & name, const NodeConfig & config,
     const std::shared_ptr<rclcpp::Node> nh)
   :StatefulActionNode(name, config), node_(nh)
@@ -26,19 +26,17 @@ public:
   static PortsList providedPorts()
   {
     return {InputPort<geometry_msgs::msg::PoseStamped>("pose_stamped"),
-      InputPort<std::string>("planing_group"),
-      OutputPort<moveit_msgs::msg::RobotTrajectory>("trajectory")};
+      InputPort<std::string>("planing_group")};
   }
 
   NodeStatus onStart() override
   {
     isRunning_ = true;
-    planSuccess_ = false;
+    threadSuccess_ = false;
 
     plan_thread_ = std::make_shared<std::thread>(
       std::bind(
-        &PlanToPose::plan, this, std::ref(isRunning_), std::ref(planSuccess_),
-        std::ref(finalPlan_))
+        &MoveToPose::plan, this, std::ref(isRunning_), std::ref(threadSuccess_))
     );
     return NodeStatus::RUNNING;
   }
@@ -48,8 +46,7 @@ public:
       return NodeStatus::RUNNING;
     }
     plan_thread_->join();
-    if (planSuccess_) {
-      setOutput("trajectory", finalPlan_.trajectory_);
+    if (threadSuccess_) {
       return NodeStatus::SUCCESS;
     } else {
       return NodeStatus::FAILURE;
@@ -59,26 +56,44 @@ public:
   void onHalted() override
   {
     isRunning_ = false;
+    move_group_interface_->stop();
     plan_thread_->detach();
   }
 
 private:
   void plan(
-    std::atomic<bool> & isRunning, std::atomic<bool> & planSuccess,
-    moveit::planning_interface::MoveGroupInterface::Plan & finalPlan)
+    std::atomic<bool> & isRunning, std::atomic<bool> & successThread)
   {
-    if (auto any_ptr = getLockedPortContent("pose_stamped")) {
-      if (!any_ptr->empty()) {
-        auto * pose_ptr = any_ptr->castPtr<geometry_msgs::msg::PoseStamped>();
-        move_group_interface_->setPoseTarget(*pose_ptr);
-        auto const [success, plan] = [this] {
-          moveit::planning_interface::MoveGroupInterface::Plan msg;
-          auto const ok = static_cast<bool>(move_group_interface_->plan(msg));
-          return std::make_pair(ok, msg);
+    // Get Input Pose to Move to
+    Expected<geometry_msgs::msg::PoseStamped> pose =
+      getInput<geometry_msgs::msg::PoseStamped>("pose_stamped");
+    // Check if expected is valid. If not, Fail Node
+    if (pose) {
+      // Set Pose as Target
+      move_group_interface_->setPoseTarget(pose.value());
+      // Plan to Pose
+      auto const [successPlan, plan] = [this] {
+        moveit::planning_interface::MoveGroupInterface::Plan msg;
+        auto const ok = static_cast<bool>(move_group_interface_->plan(msg));
+        return std::make_pair(ok, msg);
+      }();
+      // Check if Plan is valid
+      if (successPlan) {
+        // Move to Pose
+        auto const successExecute = [this, plan] {
+          return static_cast<bool>(move_group_interface_->execute(plan));
         }();
-        planSuccess = success;
-        finalPlan = plan;
+        // Check if Move was successful
+        if (successExecute) {
+          successThread = true;
+        } else {
+          successThread = false;
+        }
+      } else {
+        successThread = false;
       }
+    } else {
+      successThread = false;
     }
     isRunning = false;
   }
@@ -86,8 +101,7 @@ private:
   std::shared_ptr<rclcpp::Node> node_;
   std::shared_ptr<std::thread> plan_thread_;
   std::atomic<bool> isRunning_;
-  std::atomic<bool> planSuccess_;
-  moveit::planning_interface::MoveGroupInterface::Plan finalPlan_;
+  std::atomic<bool> threadSuccess_;
 };
 
 } // namespace name

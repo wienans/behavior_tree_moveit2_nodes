@@ -1,3 +1,6 @@
 #include "behavior_tree_moveit2_nodes/SetPose.hpp"
 #include "behavior_tree_moveit2_nodes/PrintPose.hpp"
 #include "behavior_tree_moveit2_nodes/PlanToPose.hpp"
+#include "behavior_tree_moveit2_nodes/ExecutePlan.hpp"
+#include "behavior_tree_moveit2_nodes/MoveToPose.hpp"
+#include "behavior_tree_moveit2_nodes/PlanToPoseCartesian.hpp"

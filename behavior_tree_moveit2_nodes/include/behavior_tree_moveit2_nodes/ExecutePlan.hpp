@@ -5,10 +5,10 @@
 namespace bt_moveit2_nodes
 {
 using namespace BT;
-class PlanToPose : public StatefulActionNode
+class ExecutePlan : public StatefulActionNode
 {
 public:
-  PlanToPose(
+  ExecutePlan(
     const std::string & name, const NodeConfig & config,
     const std::shared_ptr<rclcpp::Node> nh)
   :StatefulActionNode(name, config), node_(nh)
@@ -25,20 +25,18 @@ public:
 
   static PortsList providedPorts()
   {
-    return {InputPort<geometry_msgs::msg::PoseStamped>("pose_stamped"),
-      InputPort<std::string>("planing_group"),
-      OutputPort<moveit_msgs::msg::RobotTrajectory>("trajectory")};
+    return {InputPort<std::string>("planing_group"),
+      InputPort<moveit_msgs::msg::RobotTrajectory>("trajectory")};
   }
 
   NodeStatus onStart() override
   {
     isRunning_ = true;
-    planSuccess_ = false;
+    executeSuccess_ = false;
 
-    plan_thread_ = std::make_shared<std::thread>(
+    execute_thread_ = std::make_shared<std::thread>(
       std::bind(
-        &PlanToPose::plan, this, std::ref(isRunning_), std::ref(planSuccess_),
-        std::ref(finalPlan_))
+        &ExecutePlan::execute, this, std::ref(isRunning_), std::ref(executeSuccess_))
     );
     return NodeStatus::RUNNING;
   }
@@ -47,9 +45,8 @@ public:
     if (isRunning_) {
       return NodeStatus::RUNNING;
     }
-    plan_thread_->join();
-    if (planSuccess_) {
-      setOutput("trajectory", finalPlan_.trajectory_);
+    execute_thread_->join();
+    if (executeSuccess_) {
       return NodeStatus::SUCCESS;
     } else {
       return NodeStatus::FAILURE;
@@ -59,35 +56,29 @@ public:
   void onHalted() override
   {
     isRunning_ = false;
-    plan_thread_->detach();
+    move_group_interface_->stop();
+    execute_thread_->detach();
   }
 
 private:
-  void plan(
-    std::atomic<bool> & isRunning, std::atomic<bool> & planSuccess,
-    moveit::planning_interface::MoveGroupInterface::Plan & finalPlan)
+  void execute(
+    std::atomic<bool> & isRunning, std::atomic<bool> & executeSuccess)
   {
-    if (auto any_ptr = getLockedPortContent("pose_stamped")) {
+    if (auto any_ptr = getLockedPortContent("trajectory")) {
       if (!any_ptr->empty()) {
-        auto * pose_ptr = any_ptr->castPtr<geometry_msgs::msg::PoseStamped>();
-        move_group_interface_->setPoseTarget(*pose_ptr);
-        auto const [success, plan] = [this] {
-          moveit::planning_interface::MoveGroupInterface::Plan msg;
-          auto const ok = static_cast<bool>(move_group_interface_->plan(msg));
-          return std::make_pair(ok, msg);
-        }();
-        planSuccess = success;
-        finalPlan = plan;
+        auto * plan_ptr = any_ptr->castPtr<moveit_msgs::msg::RobotTrajectory>();
+        if (move_group_interface_->execute(*plan_ptr)) {
+          executeSuccess = true;
+        }
       }
     }
     isRunning = false;
   }
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface_;
   std::shared_ptr<rclcpp::Node> node_;
-  std::shared_ptr<std::thread> plan_thread_;
+  std::shared_ptr<std::thread> execute_thread_;
   std::atomic<bool> isRunning_;
-  std::atomic<bool> planSuccess_;
-  moveit::planning_interface::MoveGroupInterface::Plan finalPlan_;
+  std::atomic<bool> executeSuccess_;
 };
 
 } // namespace name

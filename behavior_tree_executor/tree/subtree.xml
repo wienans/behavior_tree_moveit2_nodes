@@ -2,34 +2,44 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="testSubTree">
     <Sequence>
-      <AlwaysSuccess name="A"/>
-      <AlwaysSuccess/>
-      <Sleep msec="1000"/>
       <SetPose x="0.28"
                y="0.4"
                z="0.5"
                frame_id="test"
                pose_stamped="{pose}"/>
       <PrintPose pose_stamped="{pose}"/>
-      <Parallel failure_count="1"
-                success_count="-1">
-        <PlanToPose pose_stamped="{pose}"
-                    planing_group="panda_arm"
-                    plan="{plan}"/>
-        <PlanToPose pose_stamped="{pose}"
-                    planing_group="panda_arm"
-                    plan="{plan}"/>
-      </Parallel>
+      <PlanToPoseCartesian pose_stamped="{pose}"
+                           planing_group="panda_arm"
+                           trajectory="{plan}"/>
+      <ExecutePlan trajectory="{plan}"
+                   planing_group="panda_arm"/>
+      <SetPose x="0.28"
+               y="-0.4"
+               z="0.5"
+               frame_id="test"
+               pose_stamped="{pose}"/>
+      <MoveToPose pose_stamped="{pose}"
+                  planing_group="panda_arm"/>
     </Sequence>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
-    <Action ID="PlanToPose"
+    <Action ID="ExecutePlan"
+            editable="true">
+      <input_port name="trajectory"/>
+      <input_port name="planing_group"/>
+    </Action>
+    <Action ID="MoveToPose"
             editable="true">
       <input_port name="pose_stamped"/>
       <input_port name="planing_group"/>
-      <output_port name="plan"/>
+    </Action>
+    <Action ID="PlanToPoseCartesian"
+            editable="true">
+      <input_port name="pose_stamped"/>
+      <input_port name="planing_group"/>
+      <output_port name="trajectory"/>
     </Action>
     <Action ID="PrintPose"
             editable="true">

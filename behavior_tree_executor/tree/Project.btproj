@@ -4,10 +4,23 @@
     <include path="subtree.xml"/>
     <!-- Description of Node Models (used by Groot) -->
     <TreeNodesModel>
+        <Action ID="ExecutePlan" editable="true">
+            <input_port name="trajectory"/>
+            <input_port name="planing_group"/>
+        </Action>
+        <Action ID="MoveToPose" editable="true">
+            <input_port name="pose_stamped"/>
+            <input_port name="planing_group"/>
+        </Action>
         <Action ID="PlanToPose" editable="true">
             <input_port name="pose_stamped"/>
             <input_port name="planing_group"/>
-            <output_port name="plan"/>
+            <output_port name="trajectory"/>
+        </Action>
+        <Action ID="PlanToPoseCartesian" editable="true">
+            <input_port name="pose_stamped"/>
+            <input_port name="planing_group"/>
+            <output_port name="trajectory"/>
         </Action>
         <Action ID="PrintPose" editable="true">
             <input_port name="pose_stamped"/>

@@ -38,6 +38,9 @@ void BehaviorTreeExecutor::init()
   factory_->registerNodeType<bt_moveit2_nodes::SetPose>("SetPose");
   factory_->registerNodeType<bt_moveit2_nodes::PrintPose>("PrintPose");
   factory_->registerNodeType<bt_moveit2_nodes::PlanToPose>("PlanToPose", node);
+  factory_->registerNodeType<bt_moveit2_nodes::PlanToPoseCartesian>("PlanToPoseCartesian", node);
+  factory_->registerNodeType<bt_moveit2_nodes::ExecutePlan>("ExecutePlan", node);
+  factory_->registerNodeType<bt_moveit2_nodes::MoveToPose>("MoveToPose", node);
 
   // Register Behavior Trees
   for (auto const & entry : std::filesystem::directory_iterator(tree_folder_path_)) {

@@ -18,15 +18,6 @@ public:
 
   NodeStatus tick() override
   {
-
-    // Expected<geometry_msgs::msg::PoseStamped> pose =
-    //   getInput<geometry_msgs::msg::PoseStamped>("pose_stamped");
-    // // Check if expected is valid. If not, throw its error
-    // if (!pose) {
-    //   throw BT::RuntimeError(
-    //           "missing required input [pose]: ",
-    //           pose.error() );
-    // }
     if (auto any_ptr = getLockedPortContent("pose_stamped")) {
       if (!any_ptr->empty()) {
         auto * pose_ptr = any_ptr->castPtr<geometry_msgs::msg::PoseStamped>();

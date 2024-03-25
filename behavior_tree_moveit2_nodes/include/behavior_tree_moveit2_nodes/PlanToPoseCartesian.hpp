@@ -5,10 +5,10 @@
 namespace bt_moveit2_nodes
 {
 using namespace BT;
-class PlanToPose : public StatefulActionNode
+class PlanToPoseCartesian : public StatefulActionNode
 {
 public:
-  PlanToPose(
+  PlanToPoseCartesian(
     const std::string & name, const NodeConfig & config,
     const std::shared_ptr<rclcpp::Node> nh)
   :StatefulActionNode(name, config), node_(nh)
@@ -37,8 +37,8 @@ public:
 
     plan_thread_ = std::make_shared<std::thread>(
       std::bind(
-        &PlanToPose::plan, this, std::ref(isRunning_), std::ref(planSuccess_),
-        std::ref(finalPlan_))
+        &PlanToPoseCartesian::plan, this, std::ref(isRunning_), std::ref(planSuccess_),
+        std::ref(finalTrajectory_))
     );
     return NodeStatus::RUNNING;
   }
@@ -49,7 +49,7 @@ public:
     }
     plan_thread_->join();
     if (planSuccess_) {
-      setOutput("trajectory", finalPlan_.trajectory_);
+      setOutput("trajectory", finalTrajectory_);
       return NodeStatus::SUCCESS;
     } else {
       return NodeStatus::FAILURE;
@@ -65,19 +65,29 @@ public:
 private:
   void plan(
     std::atomic<bool> & isRunning, std::atomic<bool> & planSuccess,
-    moveit::planning_interface::MoveGroupInterface::Plan & finalPlan)
+    moveit_msgs::msg::RobotTrajectory & finalTrajectory)
   {
     if (auto any_ptr = getLockedPortContent("pose_stamped")) {
       if (!any_ptr->empty()) {
         auto * pose_ptr = any_ptr->castPtr<geometry_msgs::msg::PoseStamped>();
-        move_group_interface_->setPoseTarget(*pose_ptr);
-        auto const [success, plan] = [this] {
-          moveit::planning_interface::MoveGroupInterface::Plan msg;
-          auto const ok = static_cast<bool>(move_group_interface_->plan(msg));
-          return std::make_pair(ok, msg);
+        std::vector<geometry_msgs::msg::Pose> waypoints;
+        waypoints.push_back(pose_ptr->pose);
+        auto const [success, trajectory] = [this, waypoints] {
+          moveit_msgs::msg::RobotTrajectory trajectory;
+          const double jump_threshold = 0.0;
+          const double eef_step = 0.01;
+          double fraction = move_group_interface_->computeCartesianPath(
+            waypoints, eef_step,
+            jump_threshold, trajectory);
+          if (fraction < 0.99) {
+            return std::make_pair(false, trajectory);
+          } else {
+            return std::make_pair(true, trajectory);
+          }
+
         }();
         planSuccess = success;
-        finalPlan = plan;
+        finalTrajectory = trajectory;
       }
     }
     isRunning = false;
@@ -87,7 +97,7 @@ private:
   std::shared_ptr<std::thread> plan_thread_;
   std::atomic<bool> isRunning_;
   std::atomic<bool> planSuccess_;
-  moveit::planning_interface::MoveGroupInterface::Plan finalPlan_;
+  moveit_msgs::msg::RobotTrajectory finalTrajectory_;
 };
 
 } // namespace name
