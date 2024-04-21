@@ -3,38 +3,36 @@
 #include <eigen3/Eigen/Dense>
 
 // Standard CPP
-#include <memory>
-#include <functional>
-#include <vector>
+#include <chrono>
 #include <filesystem>
+#include <functional>
+#include <memory>
 #include <string>
 #include <thread>
-#include <chrono>
+#include <vector>
 
 // ROS
-#include "rcpputils/visibility_control.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rcpputils/asserts.hpp"
+#include "rcpputils/visibility_control.hpp"
 
-//Behavior Tree
-#include "behaviortree_ros2/bt_topic_sub_node.hpp"
-#include "behaviortree_cpp/loggers/groot2_publisher.h"
-#include "behaviortree_cpp/loggers/bt_file_logger_v2.h"
+// Behavior Tree
 #include "behaviortree_cpp/loggers/bt_cout_logger.h"
+#include "behaviortree_cpp/loggers/bt_file_logger_v2.h"
+#include "behaviortree_cpp/loggers/groot2_publisher.h"
+#include "behaviortree_ros2/bt_topic_sub_node.hpp"
 
 // Messages
 #include "builtin_interfaces/msg/time.hpp"
 
-namespace behavior_tree_executor
-{
+namespace behavior_tree_executor {
 
-class BehaviorTreeExecutor : public rclcpp::Node
-{
-public:
+class BehaviorTreeExecutor : public rclcpp::Node {
+ public:
   RCPPUTILS_PUBLIC BehaviorTreeExecutor(rclcpp::NodeOptions options);
   ~BehaviorTreeExecutor();
 
-private:
+ private:
   /**
    * @brief Handles Parameter Server and changes
    */
@@ -76,10 +74,11 @@ private:
   /**
    * @brief Subscriber for Parameter Events / Parameter changes
    */
-  rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
+  rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr
+      param_sub_;
   /**
    * @brief Asynchron Parameter Client
    */
   rclcpp::AsyncParametersClient::SharedPtr param_client_;
 };
-}
+}  // namespace behavior_tree_executor
