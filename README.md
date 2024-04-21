@@ -32,6 +32,16 @@ Currently Available Nodes:
 
 This package includes a example behaviortree executor loading the given nodes into a factory.
 
+### Usage
+
+The Node reads all xml files in the `tree` folder and searches for the `main.xml` Tree to execute.
+Place your tree in this folder or change the folder path in `config/behavior_tree_executor.yaml`.
+Then after building start:
+
+```
+ros2 launch behavior_tree_executor behavior_tree_executor.launch.py
+```
+
 ## Contribution
 
 Feel free use and contribute new Nodes to the Repository or improve the Nodes.
